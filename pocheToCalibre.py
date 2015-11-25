@@ -55,11 +55,12 @@ class PageCounter():
     articles_count = 0
     articles_number = 1
     max_articles = 15
-    
+
     def __init__(self,indexPage):
-        nb_results = indexPage.find(True, attrs={'class': 'nb-results'})
+        nb_results = BasicNewsRecipe.tag_to_string(indexPage.find('div', attrs={'class': 'nb-results'}))
         if nb_results != None:
-            self.articles_number = int(re.findall(r'\d+', nb_results.string)[0])
+            numbersOnResult = re.findall(r'\d+', nb_results)
+            self.articles_number = int(numbersOnResult[0]) if numbersOnResult else 1
 
     def is_max_reached(self):
         "True if the max number of article has been reached"
@@ -87,7 +88,7 @@ class PageParser():
         self.pageCounter = pageCounter
         self.base_url = base_url
         self.browser = browser
-    
+
     def parse(self,page):
         for div in page.findAll(True, attrs={'class': ['entrie']}):
             key = self.get_contents_key(div)
@@ -108,7 +109,7 @@ class PageParser():
             summary = div.find('p')
             if summary:
                 description = BasicNewsRecipe.tag_to_string(summary, use_alt=False)
-            return dict(title=title, url=url, date=pubdate,description=description, content='') 
+            return dict(title=title, url=url, date=pubdate,description=description, content='')
 
     def add_article(self,key,article):
         feed = self.get_category(key)
@@ -116,20 +117,21 @@ class PageParser():
             self.articles[feed] = []
         self.articles[feed].append(article)
         self.pageCounter.article_added()
-        
+
 
     def get_category(self,key):
         return key if key else 'Uncategorized'
 
     def get_contents_key(self, div):
         """Gets key tag from article. """
-    
+
         if self.contents_key == 'read-time':
             key_tag = div.find('a', attrs={'class': ['reading-time']})
         else:
-            url = 'http://' + BasicNewsRecipe.tag_to_string(div.find('a', attrs={'class': ['tool link']}))
-            soup = self.browser.index_to_soup(url)
-            key_tag = soup.find('title')
+            #url = 'http://' + BasicNewsRecipe.tag_to_string(div.find('a', attrs={'class': ['tool link']}))
+            #soup = self.browser.index_to_soup(url)
+            #key_tag = soup.find('title')
+            key_tag = BasicNewsRecipe.tag_to_string(div.find('a', attrs={'class': ['tool link']}))
 
         return BasicNewsRecipe.tag_to_string(key_tag)
 
